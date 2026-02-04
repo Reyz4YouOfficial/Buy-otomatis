@@ -6,7 +6,6 @@ const config = require('../config');
 const app = express();
 app.use(express.json());
 
-// --- FUNGSI CREATE PANEL (Tetap Sama) ---
 async function createPanelAccount(username, ram, disk, cpu) {
     try {
         const headers = {
@@ -38,36 +37,36 @@ async function createPanelAccount(username, ram, disk, cpu) {
 
         return { success: true, password };
     } catch (error) {
-        console.error(error.message);
+        console.error("Panel Error:", error.response?.data || error.message);
         return { success: false };
     }
 }
 
-// --- ROUTES ---
-app.post('/buy', async (req, res) => {
+app.post('/buy', (req, res) => {
     const { username, ramChoice } = req.body;
-    let nominal = ramChoice === "unlimited" ? config.hargaPanel.unlimited : parseInt(ramChoice) * config.hargaPanel.perGB;
+    if (!username) return res.status(400).json({ success: false });
 
-    try {
-        const response = await axios.post('https://api.pakasir.id/v1/create-transaction', {
-            apiKey: config.pakasir.apiKey,
-            nominal: nominal,
-            note: `PTERO-${ramChoice}-${username}`
-        });
-        res.json({ success: true, qrUrl: response.data.qr_url });
-    } catch (e) {
-        res.status(500).json({ success: false });
-    }
+    let nominal = ramChoice === "unlimited" ? config.hargaPanel.unlimited : parseInt(ramChoice) * config.hargaPanel.perGB;
+    const orderId = `PTERO_${username.replace(/\s/g, '')}_${ramChoice}_${Date.now()}`;
+    const paymentUrl = `https://app.pakasir.com/pay/${config.pembayaran.slug}/${nominal}?order_id=${orderId}&qris_only=1&redirect=${config.pembayaran.redirectUrl}`;
+
+    res.json({ success: true, paymentUrl });
 });
 
 app.post('/webhook/pakasir', async (req, res) => {
-    const { status, note } = req.body;
-    if (status === 'PAID') {
-        const [, ramChoice, username] = note.split('-');
+    const { status, order_id } = req.body;
+    if (status === 'PAID' && order_id && order_id.startsWith('PTERO_')) {
+        const parts = order_id.split('_');
+        const username = parts[1];
+        const ramChoice = parts[2];
+
         let ramMB = ramChoice === "unlimited" ? 0 : parseInt(ramChoice) * 1024;
-        await createPanelAccount(username, ramMB, ramMB, ramMB === 0 ? 0 : 100);
+        let diskMB = ramChoice === "unlimited" ? 0 : 5120; // Default 5GB
+        let cpu = ramChoice === "unlimited" ? 0 : 100;
+
+        await createPanelAccount(username, ramMB, diskMB, cpu);
     }
     res.send('OK');
 });
 
-module.exports = app; // Export untuk Vercel
+module.exports = app;
