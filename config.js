@@ -10,7 +10,7 @@ module.exports = {
     },
     pembayaran: {
         slug: "reyz4youshop", // Ganti dengan slug kamu
-        redirectUrl: "https://buy-panel-otomatis.vercel.app" // Ganti dengan domain vercelmu nanti
+        redirectUrl: "https://buyy-otomatis.vercel.app" // Ganti dengan domain vercelmu nanti
     },
     hargaPanel: {
         unlimited: 12000,
