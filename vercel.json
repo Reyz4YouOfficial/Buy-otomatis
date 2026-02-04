@@ -1,0 +1,8 @@
+{
+  "version": 2,
+  "rewrites": [
+    { "source": "/buy", "destination": "/api/index.js" },
+    { "source": "/webhook/pakasir", "destination": "/api/index.js" },
+    { "source": "/(.*)", "destination": "index.html" }
+  ]
+}
